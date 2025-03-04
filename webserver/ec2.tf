@@ -28,9 +28,9 @@ resource "aws_autoscaling_group" "this" {
   max_size         = 4
 
   vpc_zone_identifier = [
-    aws_subnet.subnet_a.id,
-    aws_subnet.subnet_b.id,
-    aws_subnet.subnet_c.id
+    aws_subnet.private_subnet_a.id,
+    aws_subnet.private_subnet_b.id,
+    aws_subnet.private_subnet_c.id
   ]
 
   launch_template {
@@ -68,7 +68,7 @@ resource "aws_lb_target_group" "this" {
   name     = "webserver-targets"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  vpc_id   = aws_vpc.webserver.id
 
   health_check {
     path                = "/"
