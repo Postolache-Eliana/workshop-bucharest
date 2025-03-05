@@ -8,7 +8,7 @@ resource "aws_launch_template" "this" {
   user_data = filebase64("templates/webserver.sh")
 
   network_interfaces {
-    associate_public_ip_address = false
+    associate_public_ip_address = true
     security_groups             = [aws_security_group.web_sg.id]
     delete_on_termination       = true
   }
@@ -28,9 +28,9 @@ resource "aws_autoscaling_group" "this" {
   max_size         = 4
 
   vpc_zone_identifier = [
-    aws_subnet.private_subnet_a.id,
-    aws_subnet.private_subnet_b.id,
-    aws_subnet.private_subnet_c.id
+    aws_subnet.public_subnet_a.id,
+    aws_subnet.public_subnet_b.id,
+    aws_subnet.public_subnet_c.id
   ]
 
   launch_template {
