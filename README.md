@@ -1,75 +1,154 @@
-# Workshop-bucharest
+# AWS Workshop
 
-A workshop for the university in Bucharest
+This repository contains workshop materials for cloud architecture demonstrations, featuring both serverful and serverless approaches to building AWS applications.
 
-## Create AWS User for terraform
+## Workshop Overview
 
-To create a user for terraform, follow the steps below:
+This workshop consists of two parts:
 
-1. Go to AWS IAM Console (https://us-east-1.console.aws.amazon.com/iam/home#/users)
-2. Click on "Create user"
-3. Add as User name "terraform" and click on "Next"
+1. **Part 1: Serverful Web Architecture** - A high-availability web application using EC2, Auto Scaling, and Load Balancing
+2. **Part 2: Serverless Todo API** - A fully serverless REST API using Lambda, API Gateway, and DynamoDB
+
+## Prerequisites
+
+- AWS account with appropriate permissions
+- Terraform installed (v1.0+)
+- AWS CLI installed and configured
+- Node.js and npm
+- Git
+
+## AWS User Setup
+
+To create a user for Terraform with the necessary permissions:
+
+1. Go to [AWS IAM Console](https://us-east-1.console.aws.amazon.com/iam/home#/users)
+2. Click "Create user"
+3. Add User name "terraform" and click "Next"
 4. Click "Attach policies directly" and select the following policies:
-   1. AmazonVPCFullAccess
-   2. AmazonEC2FullAccess
-   3. AmazonAPIGatewayAdministrator
-   4. AWSLambda_FullAccess
-   5. IAMFullAccess
-   6. AmazonDynamoDBFullAccess
-5. Click on "Next"
-6. Click on "Create user"
+   - AmazonVPCFullAccess
+   - AmazonEC2FullAccess
+   - AmazonAPIGatewayAdministrator
+   - AWSLambda_FullAccess
+   - IAMFullAccess
+   - AmazonDynamoDBFullAccess
+5. Click "Next"
+6. Click "Create user"
 
-Then create an access key for the user and save the access key and secret key.
+Then create access keys for the user:
 
-1. Click on the user "terraform"
-2. Go to the "Security credentials" tab
-3. Click on "Create access key"
-4. Click on "Create access key"
-5. Save the access key and secret key
-6. Export the access key and secret key as environment variables
-
-    ```bash
-    export AWS_ACCESS_KEY_ID=""
-    export AWS_SECRET_ACCESS_KEY=""
-    ```
-
-## TODO API Workshop
-
-This workshop includes a serverless TODO API built with:
-
-- AWS Lambda functions for adding and retrieving TODOs
-- API Gateway to create REST endpoints
-- DynamoDB for persistent storage of TODO items
-
-### Preparing Lambda Functions
-
-Before deploying, make sure to install the required dependencies for the Lambda functions:
+1. Select the user "terraform"
+2. Go to "Security credentials"
+3. Click "Create access key"
+4. Choose "Command Line Interface (CLI)"
+5. Click "Next" and "Create access key"
+6. Save the access key and secret key
+7. Configure your environment:
 
 ```bash
-# Install dependencies for get_todos Lambda
-cd lambda_functions/get_todos
-npm init -y
-npm install aws-sdk
-cd ../..
+# In the root of the directory
+mkdir -p .aws
+cat > .aws/creds << EOF
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY
+EOF
+```
 
-# Install dependencies for add_todo Lambda
-cd lambda_functions/add_todo
-npm init -y
-npm install aws-sdk
-cd ../..
+## Part 1: Serverful Web Architecture
 
-# Package Lambda functions
-cd lambda_functions
-zip -r get_todos.zip get_todos/
-zip -r add_todo.zip add_todo/
-cd ..
-````
+This part demonstrates a highly available web application using EC2 instances behind a load balancer.
 
-After deployment, you can test the API using:
+### Architecture
+
+- VPC with public subnets across 3 availability zones
+- EC2 instances in an Auto Scaling Group
+- Application Load Balancer to distribute traffic
+- Security Groups for network access control
+
+### Deployment
+
+```bash
+cd webserver
+terraform init
+terraform plan
+terraform apply
+```
+
+After deployment, you can access your web application via the load balancer URL provided in the Terraform output.
+
+### Key Components
+
+- VPC Configuration: Custom network with public subnets
+- Auto Scaling Group: Ensures high availability by maintaining the desired number of instances
+- Launch Template: Defines the EC2 instance configuration with a bootstrap script
+- Load Balancer: Routes traffic to healthy instances across availability zones
+
+## Part 2: Serverless Todo API
+
+This part demonstrates a serverless REST API for managing todo items.
+
+### Architecture
+
+- Lambda functions for backend logic
+- API Gateway for RESTful API interface
+- DynamoDB for persistent data storage
+- IAM roles and policies for security
+
+### Deployment
+
+```bash
+cd todo
+terraform init
+terraform plan
+terraform apply
+```
+
+### Testing the API
+
+After deployment, you can retrieve the API endpoint:
+
+```bash
+# Get the API endpoint from Terraform output
+export TODO_API_ENDPOINT=$(terraform output -raw todo_api_endpoint)
+echo $TODO_API_ENDPOINT
+```
+
+Test the API with curl:
 
 ```bash
 # Get all todos
-curl -X GET <api_url>
+curl -X GET $TODO_API_ENDPOINT
 
 # Add a new todo
-curl -X POST <api_url> -H "Content-Type: application/json" -d '{"text": "New todo item"}'
+curl -X POST $TODO_API_ENDPOINT \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Plan a meeting with Alex to prepare the AWS workshop"}'
+```
+
+### Key Components
+
+- Lambda Functions:
+  - getToDos: Retrieves all todo items from DynamoDB
+  - addToDo: Creates a new todo item in DynamoDB
+- API Gateway: RESTful interface with two endpoints:
+  - GET /todos: List all todo items
+  - POST /todos: Create a new todo item
+- DynamoDB: NoSQL database with a single table for todo items
+
+## Cleaning Up
+
+To avoid incurring charges, remove all resources when finished:
+
+```bash
+# Clean up Todo API resources
+cd todo
+terraform destroy
+
+# Clean up Webserver resources
+cd ../webserver
+terraform destroy
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
