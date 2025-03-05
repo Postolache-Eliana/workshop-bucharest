@@ -41,3 +41,9 @@ terraform.rc
 
 # Ignore infracost directory
 .infracost/
+
+# Ignore Lambda zip files
+**/*.zip
+
+# Ignore node_modules
+**/node_modules/
