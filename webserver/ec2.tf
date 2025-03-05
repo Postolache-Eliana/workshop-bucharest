@@ -5,7 +5,7 @@ resource "aws_launch_template" "this" {
   image_id      = "ami-0584590e5f0e97daa" # Debian AMI ID for eu-central-1
   instance_type = "t2.micro"              # free tier eligible instance type
 
-  user_data = filebase64("webserver.sh")
+  user_data = filebase64("templates/webserver.sh")
 
   network_interfaces {
     associate_public_ip_address = false
