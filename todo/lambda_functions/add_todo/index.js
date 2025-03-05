@@ -1,42 +1,59 @@
-const AWS = require('aws-sdk');
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  PutCommand,
+} = require("@aws-sdk/lib-dynamodb");
 
-exports.handler = async (event) => {
-    try {
-        const requestBody = JSON.parse(event.body);
-        const timestamp = new Date().getTime().toString();
-        
-        const todo = {
-            id: `todo-${timestamp}`, // Simple ID using timestamp
-            text: requestBody.text,
-            completed: false,
-            createdAt: new Date().toISOString()
-        };
-        
-        // Add the item to DynamoDB
-        const params = {
-            TableName: 'Todos',
-            Item: todo
-        };
-        
-        await dynamoDB.put(params).promise();
-        
-        return {
-            statusCode: 201,
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST",
-            },
-            body: JSON.stringify(todo)
-        };
-    } catch (error) {
-        console.error("Error adding todo:", error);
-        return {
-            statusCode: 500,
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-            },
-            body: JSON.stringify({ message: "Failed to add todo" })
-        };
-    }
+const client = new DynamoDBClient({});
+const dynamo = DynamoDBDocumentClient.from(client);
+
+// Use the environment variable from Lambda configuration
+const tableName = process.env.TODO_TABLE_NAME;
+
+exports.handler = async (event, context) => {
+  console.log("TABLE NAME:", tableName);
+  console.log("EVENT:", JSON.stringify(event));
+  
+  let body;
+  let statusCode = 201;
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
+
+  try {
+    const requestBody = JSON.parse(event.body);
+    
+    // Generate a unique ID with timestamp
+    const timestamp = new Date().getTime();
+    
+    // Create the new todo item
+    const todo = {
+      ToDoId: `todo-${timestamp}`,
+      text: requestBody.text,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    await dynamo.send(
+      new PutCommand({
+        TableName: tableName,
+        Item: todo
+      })
+    );
+    
+    body = todo;
+  } catch (err) {
+    console.error("ERROR:", err);
+    statusCode = 400;
+    body = { message: "Bad request", error: err.message };
+  } finally {
+    body = JSON.stringify(body);
+  }
+
+  return {
+    statusCode,
+    body,
+    headers,
+  };
 };

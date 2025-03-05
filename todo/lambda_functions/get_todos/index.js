@@ -1,31 +1,42 @@
-const AWS = require('aws-sdk');
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  ScanCommand,
+} = require("@aws-sdk/lib-dynamodb");
 
-exports.handler = async (event) => {
-    try {
-        // Scan the table to get all items
-        const params = {
-            TableName: 'Todos'
-        };
-        
-        const result = await dynamoDB.scan(params).promise();
-        
-        return {
-            statusCode: 200,
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET",
-            },
-            body: JSON.stringify(result.Items)
-        };
-    } catch (error) {
-        console.error("Error fetching todos:", error);
-        return {
-            statusCode: 500,
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-            },
-            body: JSON.stringify({ message: "Failed to fetch todos" })
-        };
-    }
+const client = new DynamoDBClient({});
+const dynamo = DynamoDBDocumentClient.from(client);
+
+// Use the environment variable from Lambda configuration
+const tableName = process.env.TODO_TABLE_NAME;
+
+exports.handler = async (event, context) => {
+  console.log("TABLE NAME:", tableName);
+  console.log("EVENT:", JSON.stringify(event));
+  
+  let body;
+  let statusCode = 200;
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  };
+
+  try {
+    const response = await dynamo.send(
+      new ScanCommand({ TableName: tableName })
+    );
+    body = response.Items;
+  } catch (err) {
+    console.error("ERROR:", err);
+    statusCode = 500;
+    body = { message: "Internal server error", error: err.message };
+  } finally {
+    body = JSON.stringify(body);
+  }
+
+  return {
+    statusCode,
+    body,
+    headers,
+  };
 };
