@@ -1,19 +1,31 @@
-// In-memory store - this is only for demonstration purposes
-// In a real application, you would use DynamoDB or another persistent storage
-let todos = [
-  { id: '1', text: 'Learn Terraform', completed: false },
-  { id: '2', text: 'Build serverless API', completed: false }
-];
+const AWS = require('aws-sdk');
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event) => {
-  console.log('Getting all todos');
-  
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify({ todos: todos })
-  };
+    try {
+        // Scan the table to get all items
+        const params = {
+            TableName: 'Todos'
+        };
+        
+        const result = await dynamoDB.scan(params).promise();
+        
+        return {
+            statusCode: 200,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET",
+            },
+            body: JSON.stringify(result.Items)
+        };
+    } catch (error) {
+        console.error("Error fetching todos:", error);
+        return {
+            statusCode: 500,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+            },
+            body: JSON.stringify({ message: "Failed to fetch todos" })
+        };
+    }
 };

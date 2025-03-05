@@ -1,51 +1,42 @@
-// In-memory store - this is only for demonstration purposes
-// In a real application, you would use DynamoDB or another persistent storage
-let todos = [
-  { id: '1', text: 'Learn Terraform', completed: false },
-  { id: '2', text: 'Build serverless API', completed: false }
-];
+const AWS = require('aws-sdk');
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event) => {
-  console.log('Adding a new todo');
-  
-  try {
-    const requestBody = JSON.parse(event.body);
-    
-    if (!requestBody.text) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Todo text is required' })
-      };
+    try {
+        const requestBody = JSON.parse(event.body);
+        const timestamp = new Date().getTime().toString();
+        
+        const todo = {
+            id: `todo-${timestamp}`, // Simple ID using timestamp
+            text: requestBody.text,
+            completed: false,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Add the item to DynamoDB
+        const params = {
+            TableName: 'Todos',
+            Item: todo
+        };
+        
+        await dynamoDB.put(params).promise();
+        
+        return {
+            statusCode: 201,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST",
+            },
+            body: JSON.stringify(todo)
+        };
+    } catch (error) {
+        console.error("Error adding todo:", error);
+        return {
+            statusCode: 500,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+            },
+            body: JSON.stringify({ message: "Failed to add todo" })
+        };
     }
-    
-    const newTodo = {
-      id: String(Date.now()),
-      text: requestBody.text,
-      completed: false
-    };
-    
-    todos.push(newTodo);
-    
-    return {
-      statusCode: 201,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({ todo: newTodo })
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({ error: 'Failed to add todo' })
-    };
-  }
 };

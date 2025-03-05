@@ -15,6 +15,7 @@ To create a user for terraform, follow the steps below:
    3. AmazonAPIGatewayAdministrator
    4. AWSLambda_FullAccess
    5. IAMFullAccess
+   6. AmazonDynamoDBFullAccess
 5. Click on "Next"
 6. Click on "Create user"
 
@@ -38,7 +39,31 @@ This workshop includes a serverless TODO API built with:
 
 - AWS Lambda functions for adding and retrieving TODOs
 - API Gateway to create REST endpoints
-- In-memory storage (for demonstration purposes)
+- DynamoDB for persistent storage of TODO items
+
+### Preparing Lambda Functions
+
+Before deploying, make sure to install the required dependencies for the Lambda functions:
+
+```bash
+# Install dependencies for get_todos Lambda
+cd lambda_functions/get_todos
+npm init -y
+npm install aws-sdk
+cd ../..
+
+# Install dependencies for add_todo Lambda
+cd lambda_functions/add_todo
+npm init -y
+npm install aws-sdk
+cd ../..
+
+# Package Lambda functions
+cd lambda_functions
+zip -r get_todos.zip get_todos/
+zip -r add_todo.zip add_todo/
+cd ..
+````
 
 After deployment, you can test the API using:
 

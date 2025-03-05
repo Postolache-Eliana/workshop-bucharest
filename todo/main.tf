@@ -4,9 +4,9 @@ resource "aws_iam_role" "lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -26,6 +26,12 @@ resource "aws_lambda_function" "get_todos" {
   runtime       = "nodejs18.x"
 
   source_code_hash = filebase64sha256("${path.module}/lambda_functions/get_todos.zip")
+
+  environment {
+    variables = {
+      TODO_TABLE_NAME = aws_dynamodb_table.todos_table.name
+    }
+  }
 }
 
 # Lambda function for adding a todo
@@ -37,6 +43,12 @@ resource "aws_lambda_function" "add_todo" {
   runtime       = "nodejs18.x"
 
   source_code_hash = filebase64sha256("${path.module}/lambda_functions/add_todo.zip")
+
+  environment {
+    variables = {
+      TODO_TABLE_NAME = aws_dynamodb_table.todos_table.name
+    }
+  }
 }
 
 # API Gateway
@@ -114,4 +126,50 @@ resource "aws_lambda_permission" "add_todo" {
   function_name = aws_lambda_function.add_todo.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.todo_api.execution_arn}/*/*"
+}
+
+# DynamoDB table for storing todos
+resource "aws_dynamodb_table" "todos_table" {
+  name         = "Todos"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  tags = {
+    Name = "TodosTable"
+  }
+}
+
+# DynamoDB access policy
+resource "aws_iam_policy" "dynamodb_access" {
+  name        = "todo_dynamodb_access"
+  description = "Allow Lambda functions to access DynamoDB"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:UpdateItem"
+        ]
+        Resource = aws_dynamodb_table.todos_table.arn
+      }
+    ]
+  })
+}
+
+# Attach DynamoDB permissions to Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
+  policy_arn = aws_iam_policy.dynamodb_access.arn
+  role       = aws_iam_role.lambda_role.name
 }
