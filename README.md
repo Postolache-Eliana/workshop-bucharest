@@ -13,8 +13,6 @@ This workshop consists of two parts:
 
 - AWS account with appropriate permissions
 - Terraform installed (v1.0+)
-- AWS CLI installed and configured
-- Node.js and npm
 - Git
 
 ## AWS User Setup
