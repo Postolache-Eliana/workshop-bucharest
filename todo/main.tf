@@ -1,11 +1,11 @@
 # DynamoDB - this is the database where we will store our todos
 resource "aws_dynamodb_table" "todos_table" {
-  name         = "toDos"
+  name         = "todos"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "ToDoId"
+  hash_key     = "todoId"
 
   attribute {
-    name = "ToDoId"
+    name = "todoId"
     type = "S"
   }
 
